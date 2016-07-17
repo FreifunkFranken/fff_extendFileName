@@ -1,0 +1,7 @@
+IndexIgnore extendFileName.php
+
+RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ extendFileName.php?file=$1 [L]
+
