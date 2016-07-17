@@ -15,13 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+define('FILE_RELEASE', 'release.nfo');
 
-static $search = ['/(franken)-(.*)$/i', '/-generic-/i'];
-static $replacement = ['fff-${2}', '-g-'];
+function getVersion() {
+    if (file_exists(FILE_RELEASE)) {
+        $version = explode(':', file_get_contents(FILE_RELEASE));
+        return trim($version[1]);
+    }
+    exit;
+}
 
-static $checkfileSearch = ['/(fff)-(.*)$/i', '/-g-/i'];
-static $checkfileReplacement = ['franken-${2}', '-generic-'];
-define(FILE_REGEX, '/franken-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+(-[\w.]+)?\.bin(.md5|.sha256)?/');
+
+static $search = ['/(franken)-(.*)$/i', '/-generic-/i', '/openwrt/i'];
+$replacement = ['fff-${2}', '-g-', 'fff-'.getVersion()];
+
+define('FILE_REGEX', '/(openwrt|franken-[\w.]+)-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+(-[\w.]+)?\.bin(.md5|.sha256)?/');
 
 
 /*
@@ -83,7 +91,8 @@ $filecontent = file_get_contents($newfilename);
  * if it is a checksum file replace the filename in it
  */
 if(checkIfCheckFile($oldfildname)) {
-    $filecontent = preg_replace($checkfileSearch, $checkfileReplacement,$filecontent);
+    $hash = explode('  ',$filecontent);
+    $filecontent = $hash[0].'  '.pathinfo($oldfildname,PATHINFO_FILENAME);
 }
 /*
  * return file content to the user
