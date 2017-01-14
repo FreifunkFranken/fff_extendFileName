@@ -52,21 +52,23 @@ function checkIfCheckFile($filename) {
  * returns a 404error page
  */
 
-function return404($file) {
+function return404($file, $reason="") {
     header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
+    if ($reason!="") {
+        $reason = " ($reason)";
+    }
+
     echo <<<EOL
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html><head>
 <title>404 Not Found</title>
 </head><body>
 <h1>Not Found</h1>
-<p>The requested FILE {$file} was not found on this server.</p>
+<p>The requested FILE {$file} was not found on this server{$reason}.</p>
 </body></html>
 EOL;
     exit;
 }
-
-
 
 
 /*
@@ -76,11 +78,11 @@ $oldfildname = filter_input(INPUT_GET, 'file', FILTER_VALIDATE_REGEXP, array(
     'options' => array('regexp' => FILE_REGEX)
         ));
 if (empty($oldfildname)) {
-    return404($oldfildname);
+    return404($oldfildname, "Filename doesn't match");
 }
 $newfilename = extendFileName($oldfildname, $search, $replacement);
 if (!file_exists($newfilename)) {
-    return404($oldfildname);
+    return404($oldfildname, "Can't find new file = $newfilename");
 }
 
 /*
