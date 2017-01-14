@@ -29,7 +29,7 @@ function getVersion() {
 static $search = ['/(franken)-(.*)$/i', '/-generic-/i', '/openwrt/i'];
 $replacement = ['fff-${2}', '-g-', 'fff-'.getVersion()];
 
-define('FILE_REGEX', '/(openwrt|franken-[\w.]+)-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+-[\w.]+(-[\w.]+)?\.bin(.md5|.sha256)?/');
+define('FILE_REGEX', '/(fff-[\w.]+|openwrt|franken-[\w.]+)-.*\.bin(\.md5|\.sha256)?/');
 
 
 /*
