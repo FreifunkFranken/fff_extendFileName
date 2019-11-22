@@ -15,93 +15,115 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-define('FILE_RELEASE', 'release.nfo');
-
-function getVersion() {
-    if (file_exists(FILE_RELEASE)) {
-        $version = explode(':', file_get_contents(FILE_RELEASE));
-        return trim($version[1]);
-    }
-    exit;
-}
-
-
-static $search = ['/(franken)-(.*)$/i', '/-generic-/i', '/openwrt/i'];
-$replacement = ['fff-${2}', '-g-', 'fff-'.getVersion()];
-
+// regex for filename verification
 define('FILE_REGEX', '/(fff-[\w.]+|openwrt|franken-[\w.]+)-.*\.bin(\.md5|\.sha256)?/');
 
+function extractBoard($filename) {
+	// remove everything other than boardname
+	$search = ['/(.*)-generic-/', '/(.*)-tiny-/', '/(.*)-g-/', '/(.*)-t-/'];
+	$replace = '';
+	$filename = preg_replace($search, $replace, $filename);
 
-/*
- * Extend Filename by replacing the given filename with the given replacements
- */
+	$search = ['/-squashfs(.*)/', '/-sysupgrade(.*)/'];
+	$replace = '';
+	$filename = preg_replace($search, $replace, $filename);
 
-function extendFileName($origin, $search, $replacement) {
-    return preg_replace($search, $replacement, $origin);
+
+	// rewrite changed boardnames
+	$search = ['/-wr841n-/i', '/-cpe210-220-510-520-/i'];
+	$replace = ['-wr841-', '-cpe210-220-'];
+	$filename = preg_replace($search, $replace, $filename);
+
+	return $filename;
+}
+
+function extractVariant($filename) {
+	if (strpos($filename, 'layer3') !== false) {
+		return 'layer3';
+	} else {
+		return 'node';
+	}
 }
 
 /*
- * Returns true if the filename ends on .md5 or .sha256
+ * Extract version from release.nfo file in "current" directory for requested variant
  */
+function getServerVersion($variant) {
+	$releaseFile = "$variant/current/release.nfo";
 
-function checkIfCheckFile($filename) {
-    return (substr($filename, -4) === '.md5' || substr($filename, -7) === '.sha256');
+	if (file_exists($releaseFile)) {
+		$version = explode(':', file_get_contents($releaseFile));
+		return trim($version[1]);
+	} else {
+		trigger_error($releaseFile . " not found. Firmware version on server unknown.", E_USER_ERROR);
+	}
 }
 
 /*
- * returns a 404error page
+ * Outputs a 404 error page
  */
-
-function return404($file, $reason="") {
-    header($_SERVER["SERVER_PROTOCOL"] . " 404 Not Found");
-    if ($reason!="") {
-        $reason = " ($reason)";
-    }
-
-    echo <<<EOL
+function return404($filename, $reason="") {
+	http_response_code(404);
+	if ($reason != "") {
+		$reason = "<p>Reason: $reason.</p>";
+	}
+         
+	echo <<<EOL
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html><head>
 <title>404 Not Found</title>
 </head><body>
 <h1>Not Found</h1>
-<p>The requested FILE {$file} was not found on this server{$reason}.</p>
+<p>The requested file {$filename} was not found on this server.</p>
+{$reason}
 </body></html>
 EOL;
-    exit;
+	exit;
 }
-
 
 /*
- * first check if filename is valid and check if renamed file exist
+ * Outputs the file given in arguemnt
  */
-$oldfildname = filter_input(INPUT_GET, 'file', FILTER_VALIDATE_REGEXP, array(
-    'options' => array('regexp' => FILE_REGEX)
-        ));
-if (empty($oldfildname)) {
-    return404($oldfildname, "Filename doesn't match");
+function returnFile($filename, $oldfilename) {
+	$filecontent = file_get_contents($filename);
+
+	header('Content-disposition: attachment; filename=' . $oldfilename);
+	header('Content-type: application/octet-stream');
+	header('Content-Length: ' . strlen($filecontent));
+	header("Pragma: no-cache");
+	header("Expires: 0");
+	echo $filecontent;
 }
-$newfilename = extendFileName($oldfildname, $search, $replacement);
+
+
+
+if ($_GET["file"] === 'release.nfo') {
+	returnFile('node/current/release.nfo', 'release.nfo');
+	exit;
+}
+
+$oldfilename = filter_input(INPUT_GET, 'file', FILTER_VALIDATE_REGEXP, array('options' => array('regexp' => FILE_REGEX)));
+//$oldfilename = $argv[1];
+if (empty($oldfilename)) {
+	return404($oldfilename, "Filename doesn't match verification pattern");
+}
+
+$variant = extractVariant($oldfilename);
+$board = extractBoard($oldfilename);
+$version = getServerVersion($variant);
+
+// rewrite filename
+$newfilename = "$variant/current/fff-$variant-$version-$board-sysupgrade.bin";
 if (!file_exists($newfilename)) {
-    return404($oldfildname, "Can't find new file = $newfilename");
+	return404($oldfilename, "Can't find file with rewritten name: $newfilename");
 }
 
-/*
- * read file content
- */
-$filecontent = file_get_contents($newfilename);
-/*
- * if it is a checksum file replace the filename in it
- */
-if(checkIfCheckFile($oldfildname)) {
-    $hash = explode('  ',$filecontent);
-    $filecontent = $hash[0].'  '.pathinfo($oldfildname,PATHINFO_FILENAME);
+// append checksum to filename
+if (substr($oldfilename, -4) === '.md5') {
+	$newfilename = $newfilename . '.md5';
+} else if (substr($oldfilename, -7) === '.sha256') {
+	$newfilename = $newfilename . '.sha256';
 }
-/*
- * return file content to the user
- */
-header('Content-disposition: attachment; filename=' . $oldfildname);
-header('Content-type: application/octet-stream');
-header('Content-Length: ' . strlen($filecontent));
-header("Pragma: no-cache");
-header("Expires: 0");
-echo $filecontent;
+
+returnFile($newfilename, $oldfilename);
+exit;
