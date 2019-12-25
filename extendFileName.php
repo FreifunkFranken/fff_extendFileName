@@ -94,7 +94,13 @@ function returnFile($filename, $oldfilename) {
 			return;
 		}
 
-		$filecontent = "$shasum  $oldfilename" . "\n";
+		// remove .sha256 or .md5
+		$filename = preg_replace(array('/\.sha256/', '/\.md5/'), array(''), $oldfilename);
+		if ($filename === false) {
+			return;
+		}
+
+		$filecontent = "$shasum  $filename" . "\n";
 	}
 
 	header('Content-disposition: attachment; filename=' . $oldfilename);
