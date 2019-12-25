@@ -87,11 +87,22 @@ EOL;
 function returnFile($filename, $oldfilename) {
 	$filecontent = file_get_contents($filename);
 
+	// replace filename in sha256 and md5 sum
+	if (strpos($filename, '.sha256') !== false || strpos($filename, '.md5') !== false) {
+		$shasum = strtok($filecontent, ' ');
+		if ($shasum === false) {
+			return;
+		}
+
+		$filecontent = "$shasum  $oldfilename" . "\n";
+	}
+
 	header('Content-disposition: attachment; filename=' . $oldfilename);
 	header('Content-type: application/octet-stream');
 	header('Content-Length: ' . strlen($filecontent));
 	header("Pragma: no-cache");
 	header("Expires: 0");
+
 	echo $filecontent;
 }
 
