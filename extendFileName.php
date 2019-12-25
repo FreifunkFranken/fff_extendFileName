@@ -113,7 +113,7 @@ $board = extractBoard($oldfilename);
 $version = getServerVersion($variant);
 
 // rewrite filename
-$newfilename = "$variant/current/fff-$variant-$version-$board-sysupgrade.bin";
+$newfilename = "$variant/current/fff-$version-$board-sysupgrade.bin";
 if (!file_exists($newfilename)) {
 	return404($oldfilename, "Can't find file with rewritten name: $newfilename");
 }
