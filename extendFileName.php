@@ -20,7 +20,7 @@ define('FILE_REGEX', '/(fff-[\w.]+|openwrt|franken-[\w.]+)-.*\.bin(\.md5|\.sha25
 
 function extractBoard($filename) {
 	// remove everything other than boardname
-	$search = ['/(.*)-generic-/', '/(.*)-tiny-/', '/(.*)-g-/', '/(.*)-t-/'];
+	$search = ['/(.*)-generic-/', '/(.*)-tiny-/', '/(.*)-g-/', '/(.*)-t-/', '/fff-([^-]*)-([^-]*)-/'];
 	$replace = '';
 	$filename = preg_replace($search, $replace, $filename);
 
