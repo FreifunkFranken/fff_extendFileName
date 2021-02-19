@@ -28,12 +28,6 @@ function extractBoard($filename) {
 	$replace = '';
 	$filename = preg_replace($search, $replace, $filename);
 
-
-	// rewrite changed boardnames
-	$search = ['/-wr841n-/i', '/-cpe210-220-510-520-/i'];
-	$replace = ['-wr841-', '-cpe210-220-'];
-	$filename = preg_replace($search, $replace, $filename);
-
 	return $filename;
 }
 
@@ -112,6 +106,65 @@ function returnFile($filename, $oldfilename) {
 	echo $filecontent;
 }
 
+function rewriteBoard($board) {
+	$search = ['/-wr841n-/i', '/-cpe210-220-510-520-/i'];
+	$replace = ['-wr841-', '-cpe210-220-'];
+	$board = preg_replace($search, $replace, $board);
+
+	switch ($board) {
+		case "gl-ar150":
+			return "glinet_" . $board;
+		case "cpe210-v2":
+		case "cpe210-v3":
+		case "archer-c25-1":
+		case "archer-c60-v1":
+		case "archer-c60-v2":
+		case "archer-c7-v2":
+		case "archer-c7-v5":
+		case "tl-mr3020-v1":
+		case "tl-wa850re-v1":
+		case "tl-wa860re-v1":
+		case "tl-wa901nd-v2":
+		case "tl-wdr3500-v1":
+		case "tl-wdr3600-v1":
+		case "tl-wdr4300-v1":
+		case "tl-wdr4310-v1":
+		case "tl-wr1043n-v5":
+		case "tl-wr1043nd-v1":
+		case "tl-wr1043nd-v2":
+		case "tl-wr1043nd-v3":
+		case "tl-wr1043nd-v4":
+		case "tl-wr1043n-v5":
+		case "tl-wr740n-v4":
+		case "tl-wr741nd-v2":
+		case "tl-wr741nd-v4":
+		case "tl-wr841-v7":
+		case "tl-wr841-v8":
+		case "tl-wr841-v9":
+		case "tl-wr841-v10":
+		case "tl-wr841-v11":
+		case "tl-wr841-v12":
+		case "tl-wr842n-v2":
+			return "tplink_" . $board;
+		case "ubnt-bullet-m":
+			return "ubnt_bullet-m";
+		case "ubnt-pico-m":
+			return "ubnt_picostation-m";
+		case "ubnt-loco-m":
+			return "ubnt_nanostation-loco-m";
+		case "ubnt-loco-m-xw":
+			return "ubnt_nanostation-loco-m-xw";
+		case "ubnt-nano-m":
+			return "ubnt_nanostation-m";
+		case "ubnt-unifi":
+			return "ubnt_unifi";
+		case "ubnt-unifiac-lite":
+			# TODO: only ac-mesh. not distinguishable -> return error
+			return "ubnt_unifiac";
+		default:
+			return $board;
+	}
+}
 
 
 if ($_GET["file"] === 'release.nfo') {
@@ -125,17 +178,25 @@ if (empty($oldfilename)) {
 	return404($oldfilename, "Filename doesn't match verification pattern");
 }
 
+# extract wanted variant and boardname from filename
 $variant = extractVariant($oldfilename);
 $board = extractBoard($oldfilename);
+
+# account for changed boardnames
+$board = rewriteBoard($board);
+
+
+# get most recent firmware version for selected variant
 $version = getServerVersion($variant);
 
-// rewrite filename
+
+# generate new filename
 $newfilename = "$variant/current/fff-$version-$board-sysupgrade.bin";
 if (!file_exists($newfilename)) {
 	return404($oldfilename, "Can't find file with rewritten name: $newfilename");
 }
 
-// append checksum to filename
+# append correct extension to filename if checksum file was requested
 if (substr($oldfilename, -4) === '.md5') {
 	$newfilename = $newfilename . '.md5';
 } else if (substr($oldfilename, -7) === '.sha256') {
