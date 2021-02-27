@@ -146,6 +146,9 @@ function rewriteBoard($board) {
 		case "tl-wr841-v12":
 		case "tl-wr842n-v2":
 			return "tplink_" . $board;
+		case "tplink_tl-wdr4900-v1":
+			# to be inverted with openwrt 21.xx
+			return "tl-wdr4900-v1";
 		case "ubnt-bullet-m":
 			return "ubnt_bullet-m";
 		case "ubnt-pico-m":
